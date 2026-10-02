@@ -1,0 +1,39 @@
+void BookManager::menu() {
+    int choice = -1;
+    do {
+        if (std::cin.eof()) {
+         
+            saveToFile();
+            std::cout << "输入已结束，数据已保存，系统退出。\n";
+            return;
+        }
+        std::cout << "\n========== 图书管理系统 ==========\n"
+            << "1. 添加图书\n"
+            << "2. 显示所有图书\n"
+            << "3. 查询图书\n"
+            << "4. 修改图书\n"
+            << "5. 删除图书\n"
+            << "6. 借书\n"
+            << "7. 还书\n"
+            << "0. 退出系统\n"
+            << "==================================\n";
+        choice = readInt("请选择功能：", -1);
+
+        switch (choice) {
+        case 1: addBook(); break;
+        case 2: displayBooks(); break;
+        case 3: searchBook(); break;
+        case 4: modifyBook(); break;
+        case 5: deleteBook(); break;
+        case 6: borrowBook(); break;
+        case 7: returnBook(); break;
+        case 0:
+            saveToFile();
+            std::cout << "感谢使用图书管理系统！\n";
+            break;
+        default:
+            std::cout << "无效选择，请重新输入！\n";
+            break;
+        }
+    } while (choice != 0);
+}

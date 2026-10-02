@@ -1,0 +1,385 @@
+#include "Bookmanager.h"
+
+#include <cctype>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <string>
+
+namespace {
+
+    constexpr const char* kFileName = "books.txt";
+    constexpr char kFieldSep = '\t';
+
+    void skipLine() {
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+
+    int readInt(const std::string& prompt, int fallback) {
+        std::cout << prompt;
+        int value = fallback;
+        if (std::cin >> value) {
+            skipLine();
+            return value;
+        }
+        std::cin.clear();
+        skipLine();
+        std::cout << "输入无效，已使用默认值 " << fallback << "。\n";
+        return fallback;
+    }
+
+    double readDouble(const std::string& prompt, double fallback) {
+        std::cout << prompt;
+        double value = fallback;
+        if (std::cin >> value) {
+            skipLine();
+            return value;
+        }
+        std::cin.clear();
+        skipLine();
+        std::cout << "输入无效，已使用默认值 " << fallback << "。\n";
+        return fallback;
+    }
+
+  
+    std::string readLine(const std::string& prompt) {
+        std::cout << prompt;
+        std::string line;
+        std::getline(std::cin, line);
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        return line;
+    }
+
+
+    bool contains(const std::string& text, const std::string& keyword) {
+        if (keyword.empty()) {
+            return true;
+        }
+        auto lower = [](unsigned char c) {
+            return static_cast<char>(std::tolower(c));
+            };
+        for (std::size_t i = 0; i + keyword.size() <= text.size(); ++i) {
+            bool hit = true;
+            for (std::size_t j = 0; j < keyword.size(); ++j) {
+                if (lower(static_cast<unsigned char>(text[i + j])) !=
+                    lower(static_cast<unsigned char>(keyword[j]))) {
+                    hit = false;
+                    break;
+                }
+            }
+            if (hit) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+} 
+
+Book* BookManager::find(int id) {
+    for (Book& book : books) {
+        if (book.id == id) {
+            return &book;
+        }
+    }
+    return nullptr;
+}
+
+const Book* BookManager::find(int id) const {
+    for (const Book& book : books) {
+        if (book.id == id) {
+            return &book;
+        }
+    }
+    return nullptr;
+}
+
+void BookManager::printBook(const Book& book) {
+    std::cout << "\nID：" << book.id << '\n'
+        << "书名：" << book.title << '\n'
+        << "作者：" << book.author << '\n'
+        << "出版社：" << book.publisher << '\n'
+        << std::fixed << std::setprecision(2)
+        << "价格：" << book.price << '\n'
+        << std::defaultfloat
+        << "总数：" << book.total << '\n'
+        << "可借：" << book.available << '\n';
+}
+
+void BookManager::addBook() {
+    Book book;
+    book.id = readInt("请输入图书ID：", 0);
+
+    book.title = readLine("请输入书名：");
+    if (book.title.empty()) {
+        std::cout << "书名不能为空，添加失败！\n";
+        return;
+    }
+    book.author = readLine("请输入作者：");
+    book.publisher = readLine("请输入出版社：");
+    book.price = readDouble("请输入价格：", 0.0);
+    book.total = readInt("请输入总数量：", 0);
+    book.available = book.total;
+
+    if (find(book.id) != nullptr) {
+        std::cout << "该图书ID已存在！\n";
+        return;
+    }
+
+    books.push_back(book);
+    std::cout << "图书添加成功！\n";
+    saveToFile();
+}
+
+void BookManager::displayBooks() const {
+    if (books.empty()) {
+        std::cout << "当前没有图书！\n";
+        return;
+    }
+
+    std::cout << '\n'
+        << std::left
+        << std::setw(10) << "ID"
+        << std::setw(24) << "书名"
+        << std::setw(18) << "作者"
+        << std::setw(22) << "出版社"
+        << std::setw(10) << "价格"
+        << std::setw(8) << "总数"
+        << std::setw(8) << "可借" << '\n';
+    std::cout << std::string(96, '-') << '\n';
+
+    std::cout << std::fixed << std::setprecision(2);
+    for (const Book& book : books) {
+        std::cout << std::setw(10) << book.id
+            << std::setw(24) << book.title
+            << std::setw(18) << book.author
+            << std::setw(22) << book.publisher
+            << std::setw(10) << book.price
+            << std::setw(8) << book.total
+            << std::setw(8) << book.available << '\n';
+    }
+    std::cout << std::defaultfloat;
+}
+
+void BookManager::searchBook() const {
+    if (books.empty()) {
+        std::cout << "当前没有图书！\n";
+        return;
+    }
+
+    std::cout << "1. 按ID查询\n"
+        << "2. 按书名查询\n"
+        << "3. 按作者查询\n";
+    const int choice = readInt("请选择查询方式：", 0);
+
+    if (choice == 1) {
+        const int id = readInt("请输入图书ID：", 0);
+        if (const Book* book = find(id)) {
+            printBook(*book);
+        }
+        else {
+            std::cout << "未找到相关图书！\n";
+        }
+        return;
+    }
+
+    std::string keyword;
+    if (choice == 2) {
+        keyword = readLine("请输入书名关键字：");
+    }
+    else if (choice == 3) {
+        keyword = readLine("请输入作者关键字：");
+    }
+    else {
+        std::cout << "无效选择！\n";
+        return;
+    }
+
+    bool found = false;
+    for (const Book& book : books) {
+        const bool hit = (choice == 2) ? contains(book.title, keyword)
+            : contains(book.author, keyword);
+        if (hit) {
+            printBook(book);
+            found = true;
+        }
+    }
+    if (!found) {
+        std::cout << "未找到相关图书！\n";
+    }
+}
+
+void BookManager::modifyBook() {
+    if (books.empty()) {
+        std::cout << "当前没有图书！\n";
+        return;
+    }
+
+    const int id = readInt("请输入要修改的图书ID：", 0);
+    Book* book = find(id);
+    if (book == nullptr) {
+        std::cout << "未找到该图书！\n";
+        return;
+    }
+
+    std::cout << "\n当前图书信息：\n";
+    printBook(*book);
+
+    std::string temp = readLine("\n输入新书名（留空不修改）：");
+    if (!temp.empty()) {
+        book->title = temp;
+    }
+    temp = readLine("输入新作者（留空不修改）：");
+    if (!temp.empty()) {
+        book->author = temp;
+    }
+    temp = readLine("输入新出版社（留空不修改）：");
+    if (!temp.empty()) {
+        book->publisher = temp;
+    }
+
+    const double price = readDouble("输入新价格（输入0不修改）：", 0.0);
+    if (price > 0) {
+        book->price = price;
+    }
+
+    const int total = readInt("输入新总数（输入0不修改）：", 0);
+    if (total > 0) {
+        const int borrowed = book->total - book->available;
+        book->total = total;
+        book->available = (total < borrowed) ? 0 : total - borrowed;
+    }
+
+    std::cout << "图书修改成功！\n";
+    saveToFile();
+}
+
+void BookManager::deleteBook() {
+    if (books.empty()) {
+        std::cout << "当前没有图书！\n";
+        return;
+    }
+
+    const int id = readInt("请输入要删除的图书ID：", 0);
+    for (auto it = books.begin(); it != books.end(); ++it) {
+        if (it->id == id) {
+            books.erase(it);
+            std::cout << "图书删除成功！\n";
+            saveToFile();
+            return;
+        }
+    }
+    std::cout << "未找到该图书！\n";
+}
+
+void BookManager::borrowBook() {
+    if (books.empty()) {
+        std::cout << "当前没有图书！\n";
+        return;
+    }
+
+    const int id = readInt("请输入要借阅的图书ID：", 0);
+    Book* book = find(id);
+    if (book == nullptr) {
+        std::cout << "未找到该图书！\n";
+        return;
+    }
+    if (book->available <= 0) {
+        std::cout << "该书已全部借出！\n";
+        return;
+    }
+
+    --book->available;
+    std::cout << "借书成功！剩余可借 " << book->available << " 本。\n";
+    saveToFile();
+}
+
+void BookManager::returnBook() {
+    if (books.empty()) {
+        std::cout << "当前没有图书！\n";
+        return;
+    }
+
+    const int id = readInt("请输入要归还的图书ID：", 0);
+    Book* book = find(id);
+    if (book == nullptr) {
+        std::cout << "未找到该图书！\n";
+        return;
+    }
+    if (book->available >= book->total) {
+        std::cout << "该书库存正常，无需归还！\n";
+        return;
+    }
+
+    ++book->available;
+    std::cout << "还书成功！当前可借 " << book->available << " 本。\n";
+    saveToFile();
+}
+
+bool BookManager::loadFromFile() {
+    std::ifstream in(kFileName);
+    if (!in) {
+        return false;
+    }
+
+    books.clear();
+    std::string line;
+    while (std::getline(in, line)) {
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        if (line.empty()) {
+            continue;
+        }
+
+        std::istringstream fields(line);
+        Book book;
+        std::string idText, priceText, totalText, availableText;
+        if (!std::getline(fields, idText, kFieldSep) ||
+            !std::getline(fields, book.title, kFieldSep) ||
+            !std::getline(fields, book.author, kFieldSep) ||
+            !std::getline(fields, book.publisher, kFieldSep) ||
+            !std::getline(fields, priceText, kFieldSep) ||
+            !std::getline(fields, totalText, kFieldSep) ||
+            !std::getline(fields, availableText, kFieldSep)) {
+            continue; 
+        }
+
+        try {
+            book.id = std::stoi(idText);
+            book.price = std::stod(priceText);
+            book.total = std::stoi(totalText);
+            book.available = std::stoi(availableText);
+        }
+        catch (const std::exception&) {
+            continue; 
+        }
+
+        books.push_back(book);
+    }
+    return true;
+}
+
+bool BookManager::saveToFile() const {
+    std::ofstream out(kFileName, std::ios::trunc);
+    if (!out) {
+        std::cout << "文件保存失败！\n";
+        return false;
+    }
+
+    out << std::fixed << std::setprecision(2);
+    for (const Book& book : books) {
+        out << book.id << kFieldSep
+            << book.title << kFieldSep
+            << book.author << kFieldSep
+            << book.publisher << kFieldSep
+            << book.price << kFieldSep
+            << book.total << kFieldSep
+            << book.available << '\n';
+    }
+    return true;
+}

@@ -1,9 +1,20 @@
-﻿#include "Book.h"
+#include "Book.h"
 
-Book::Book(std::string i, std::string t, std::string a, int total)
-    : id(i), title(t), author(a), totalCopies(total), availableCopies(total) {
-}
+#include <iomanip>
+#include <iostream>
 
-std::string Book::getInfo() const {
-    return "《" + title + "》 by " + author + " [ID:" + id + "]";
+using namespace std;
+
+Book::Book() : total(0), available(0) {}
+
+Book::Book(string id, string title, string author, string publisher, int total)
+    : id(id), title(title), author(author), publisher(publisher),
+      total(total), available(total) {}
+
+void Book::show() const {
+    cout << left << setw(10) << id
+         << setw(22) << title
+         << setw(14) << author
+         << setw(16) << publisher
+         << available << "/" << total << endl;
 }

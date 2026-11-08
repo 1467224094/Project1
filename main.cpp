@@ -1,16 +1,14 @@
 #include <iostream>
-#include <windows.h> 
-#include "LibrarySystem.h" 
+#include <windows.h>
+
+#include "Library.h"
 
 using namespace std;
 
 int main() {
-    SetConsoleCP(CP_UTF8);
-    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);   // 控制台显示中文
 
-    cout << "正在启动...\n";
-
-    LibrarySystem lib;
+    Library lib;
     lib.run();
 
     return 0;

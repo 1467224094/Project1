@@ -1,66 +1,61 @@
 #include "Person.h"
+
 #include <algorithm>
+#include <iomanip>
+#include <iostream>
 
+using namespace std;
 
+Person::Person(string id, string name, string dept, int maxBorrow)
+    : id(id), name(name), dept(dept), maxBorrow(maxBorrow) {}
 
-Person::Person(std::string i, std::string n) : id(i), name(n) {}
+string Person::getId() const { return id; }
+string Person::getName() const { return name; }
+string Person::getDept() const { return dept; }
+int Person::getMaxBorrow() const { return maxBorrow; }
+vector<string> Person::getBooks() const { return books; }
 
-Person::~Person() {}
+void Person::setName(string name) { this->name = name; }
+void Person::setDept(string dept) { this->dept = dept; }
 
-std::string Person::getId() const { return id; }
-std::string Person::getName() const { return name; }
+void Person::show() const {
+    cout << left << setw(10) << id
+         << setw(8) << getType()
+         << setw(10) << name
+         << setw(16) << dept
+         << books.size() << "/" << maxBorrow << endl;
+}
 
 bool Person::canBorrow() const {
-    return borrowedBookIds.size() < static_cast<size_t>(getMaxBorrow());
+    return (int)books.size() < maxBorrow;
 }
 
-bool Person::isBorrowed(const std::string& bookId) const {
-    return std::find(borrowedBookIds.begin(), borrowedBookIds.end(), bookId) != borrowedBookIds.end();
+bool Person::hasBorrowed(string bookId) const {
+    for (int i = 0; i < (int)books.size(); i++) {
+        if (books[i] == bookId) return true;
+    }
+    return false;
 }
 
-void Person::addBorrowRecord(const std::string& bookId) {
-    borrowedBookIds.push_back(bookId);
+void Person::borrowBook(string bookId) {
+    books.push_back(bookId);
 }
 
-void Person::removeBorrowRecord(const std::string& bookId) {
-    borrowedBookIds.erase(
-        std::remove(borrowedBookIds.begin(), borrowedBookIds.end(), bookId),
-        borrowedBookIds.end()
-    );
+void Person::returnBook(string bookId) {
+    for (int i = 0; i < (int)books.size(); i++) {
+        if (books[i] == bookId) {
+            books.erase(books.begin() + i);
+            return;
+        }
+    }
 }
 
-const std::vector<std::string>& Person::getBorrowedBooks() const {
-    return borrowedBookIds;
-}
+Student::Student(string id, string name, string dept, int maxBorrow)
+    : Person(id, name, dept, maxBorrow) {}
 
-std::string Person::getDescription() const {
-    return "Name: " + name + ", Type: " + getType() + ", Borrowed: " +
-        std::to_string(borrowedBookIds.size()) + "/" + std::to_string(getMaxBorrow());
-}
+string Student::getType() const { return "学生"; }
 
+Teacher::Teacher(string id, string name, string dept, int maxBorrow)
+    : Person(id, name, dept, maxBorrow) {}
 
-Student::Student(std::string i, std::string n) : Person(i, n) {}
-
-int Student::getMaxBorrow() const {
-    return 5;
-}
-
-std::string Student::getType() const {
-    return "Student";
-}
-
-
-Teacher::Teacher(std::string i, std::string n) : Person(i, n) {}
-
-int Teacher::getMaxBorrow() const {
-    return 10;
-}
-
-std::string Teacher::getType() const {
-    return "Teacher";
-}
-
-std::string Teacher::getDescription() const {
-    return "Name: " + name + ", Type: " + getType() + " (Privileged), Borrowed: " +
-        std::to_string(getBorrowedBooks().size()) + "/" + std::to_string(getMaxBorrow());
-}
+string Teacher::getType() const { return "教师"; }

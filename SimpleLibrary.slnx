@@ -1,7 +1,0 @@
-<Solution>
-  <Configurations>
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Project Path="SimpleLibrary.vcxproj" Id="7f3c2a51-9b64-4d2e-8c17-3e5a9d0b4c21" />
-</Solution>
